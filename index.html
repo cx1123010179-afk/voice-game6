@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>别卡住挑战</title>
+
+<style>
+html,body{
+  margin:0;
+  padding:0;
+  height:100%;
+  font-family:"微软雅黑";
+}
+
+/* 整体容器（手机全屏） */
+.app{
+  width:100vw;
+  height:100dvh;
+  position:relative;
+  overflow:hidden;
+  background:#f5f5f5;
+}
+
+/* 页面 */
+.page{
+  position:absolute;
+  width:100%;
+  height:100%;
+  top:0;
+  left:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+/* 背景 */
+.bg{
+  position:absolute;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:0;
+}
+
+/* 白色遮罩 */
+.overlay{
+  position:absolute;
+  width:100%;
+  height:100%;
+  background:rgba(255,255,255,0.75);
+  z-index:1;
+}
+
+/* 内容 */
+.content{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:85%;
+  text-align:center;
+  z-index:2;
+}
+
+/* 标题 */
+.title{
+  font-size:30px;
+  color:#4aa3df;
+  font-weight:bold;
+}
+
+/* 副标题 */
+.subtitle{
+  font-size:16px;
+  color:#666;
+  margin-top:10px;
+}
+
+/* 句子 */
+.sentence{
+  font-size:22px;
+  margin:20px 0;
+  background:rgba(255,255,255,0.7);
+  padding:10px;
+  border-radius:12px;
+}
+
+/* 按钮 */
+.btn{
+  display:block;
+  margin:30px auto;
+  padding:16px 28px;
+  font-size:18px;
+  border:none;
+  border-radius:25px;
+  color:white;
+  background:linear-gradient(90deg,#4aa3df,#7cffc4);
+  box-shadow:0 8px 20px rgba(0,0,0,0.2);
+  width:70%;
+}
+
+/* 声纹 */
+.wave{
+  height:60px;
+  display:flex;
+  justify-content:center;
+  align-items:end;
+  margin:20px 0;
+}
+
+.bar{
+  width:6px;
+  margin:0 3px;
+  background:linear-gradient(#4aa3df,#7cffc4);
+  border-radius:3px;
+  animation:wave 1s infinite;
+}
+
+.bar:nth-child(2){animation-delay:.2s}
+.bar:nth-child(3){animation-delay:.4s}
+.bar:nth-child(4){animation-delay:.6s}
+.bar:nth-child(5){animation-delay:.8s}
+
+@keyframes wave{
+  0%,100%{height:10px}
+  50%{height:45px}
+}
+
+.hidden{display:none}
+
+.result{
+  white-space:pre-line;
+  font-size:16px;
+  margin-top:15px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- 封面 -->
+<div class="page" id="cover">
+  <img src="img/cover.jpg" class="bg">
+  <div class="overlay"></div>
+  <div class="content">
+    <div class="title">别卡住挑战</div>
+    <div class="subtitle">在高压场景中开口表达<br>看看你能不能稳住</div>
+    <button class="btn" onclick="startGame()">开始挑战</button>
+  </div>
+</div>
+
+<!-- 游戏 -->
+<div class="page hidden" id="game">
+  <img src="" id="bg" class="bg">
+  <div class="overlay"></div>
+  <div class="content">
+    <div class="title" id="scene"></div>
+    <div class="sentence" id="sentence"></div>
+
+    <div class="wave" id="wave">
+      <div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+
+    <div id="progress"></div>
+    <div id="result"></div>
+
+    <button class="btn" onclick="next()">下一场景</button>
+  </div>
+</div>
+
+<!-- 结果 -->
+<div class="page hidden" id="final">
+  <img src="img/result.jpg" class="bg">
+  <div class="overlay"></div>
+  <div class="content">
+    <div class="title">你的控场报告</div>
+    <div class="result" id="finalText"></div>
+    <button class="btn" onclick="location.reload()">再来一次</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+
+const scenes = [
+{ name:"会议室汇报", text:"我觉得这个方案可以再优化一下", bg:"img/meeting.jpg" },
+{ name:"课堂发言", text:"这个问题我可以补充说明一下", bg:"img/class.jpg" },
+{ name:"直播开场", text:"大家好欢迎来到直播间", bg:"img/live.jpg" },
+{ name:"关键表达", text:"其实我一直想告诉你一件事", bg:"img/love.jpg" }
+];
+
+let index=0;
+let scores=[];
+let startTime;
+
+function startGame(){
+document.getElementById("cover").classList.add("hidden");
+document.getElementById("game").classList.remove("hidden");
+index=0;
+scores=[];
+nextScene();
+}
+
+function nextScene(){
+
+if(index>=scenes.length){
+finish();
+return;
+}
+
+let s=scenes[index];
+
+document.getElementById("scene").innerText=s.name;
+document.getElementById("sentence").innerText=s.text;
+document.getElementById("progress").innerText=(index+1)+"/"+scenes.length;
+document.getElementById("bg").src=s.bg;
+document.getElementById("wave").style.display="flex";
+document.getElementById("result").innerText="";
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if(!SpeechRecognition){
+alert("请用Chrome浏览器打开体验");
+return;
+}
+
+let rec=new SpeechRecognition();
+rec.lang="zh-CN";
+rec.interimResults=false;
+
+startTime=Date.now();
+
+rec.onresult=function(e){
+let text=e.results[0][0].transcript;
+evaluate(text,s.text);
+};
+
+rec.start();
+}
+
+function evaluate(input,target){
+
+let time=(Date.now()-startTime)/1000;
+
+let match=0;
+for(let i=0;i<Math.min(input.length,target.length);i++){
+if(input[i]==target[i]) match++;
+}
+
+let score=Math.floor((match/target.length*0.7 + Math.max(0,1-time/6)*0.3)*100);
+
+scores.push({scene:scenes[index].name,score:score});
+
+document.getElementById("result").innerText="本场控场指数："+score;
+document.getElementById("wave").style.display="none";
+}
+
+function next(){
+index++;
+nextScene();
+}
+
+function finish(){
+
+document.getElementById("game").classList.add("hidden");
+document.getElementById("final").classList.remove("hidden");
+
+let total=Math.floor(scores.reduce((a,b)=>a+b.score,0)/scores.length);
+let best=scores.sort((a,b)=>b.score-a.score)[0];
+
+let text="🏆 控场指数："+total+"\n\n最佳表现："+best.scene+"\n\n";
+
+if(total>80){
+text+="你在高压环境下依然稳住表达";
+}else if(total>60){
+text+="整体不错，但偶尔卡顿";
+}else{
+text+="关键时刻容易卡住，需要练习";
+}
+
+document.getElementById("finalText").innerText=text;
+}
+
+</script>
+
+</body>
+</html>
